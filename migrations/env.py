@@ -26,7 +26,8 @@ if db_url.startswith("postgres://"):
 elif db_url.startswith("postgresql://") and not db_url.startswith("postgresql+"):
     db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
 
-config.set_main_option("sqlalchemy.url", db_url)
+# Set sqlalchemy.url from settings (escape % for ConfigParser interpolation)
+config.set_main_option("sqlalchemy.url", db_url.replace("%", "%%"))
 
 
 def run_migrations_offline() -> None:
