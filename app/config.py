@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     CLAMAV_HOST: str = "localhost"
     CLAMAV_PORT: int = 3310
     CLAMAV_SOCKET_TIMEOUT: int = 15
+    CLAMAV_REQUIRED: bool = True
 
     # Limits
     MAX_FILE_SIZE_MB: int = 100

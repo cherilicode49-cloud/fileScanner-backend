@@ -91,6 +91,11 @@ class ScanService:
             return "SUSPICIOUS", threats, scanner_results
 
         if c_status in ("ERROR", "UNABLE_TO_SCAN") or not clamav_res.get("available", False):
+            if settings.CLAMAV_REQUIRED:
+                return "UNABLE_TO_SCAN", threats, scanner_results
+            # If ClamAV is optional in dev environment, fall back to YARA assessment
+            if y_status == "CLEAN" and yara_res.get("available", False):
+                return "CLEAN", threats, scanner_results
             return "UNABLE_TO_SCAN", threats, scanner_results
 
         if y_status in ("ERROR", "UNABLE_TO_SCAN") or not yara_res.get("available", False):
@@ -308,7 +313,7 @@ class ScanService:
 
                 if clamav_res := clamav_service.ping() is False:
                     clamav_overall_status = "UNABLE_TO_SCAN"
-                    if overall_status == "CLEAN":
+                    if overall_status == "CLEAN" and settings.CLAMAV_REQUIRED:
                         overall_status = "UNABLE_TO_SCAN"
                 if yara_service.rules is None:
                     yara_overall_status = "UNABLE_TO_SCAN"
