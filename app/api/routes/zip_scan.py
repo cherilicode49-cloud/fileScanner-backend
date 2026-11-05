@@ -12,6 +12,7 @@ router = APIRouter(prefix="/scan", tags=["Scanning"])
 
 
 @router.post("/zip")
+@router.post("/zip/")
 async def scan_zip_endpoint(
     file: UploadFile = File(..., description="The ZIP archive to safely inspect and scan"),
     sync: Optional[bool] = Query(None, description="Force synchronous execution"),
@@ -24,13 +25,11 @@ async def scan_zip_endpoint(
     if not file.filename:
         return error_response(message="No file uploaded or filename missing", status_code=status.HTTP_400_BAD_REQUEST)
 
-    # Save uploaded archive
     file_info = await file_service.save_uploaded_file(file)
 
     if file_info["is_empty"]:
         return error_response(message="Uploaded ZIP archive is empty (0 bytes)", status_code=status.HTTP_400_BAD_REQUEST)
 
-    # Validate that it's a zip file or has zip header
     if file_info["mime_type"] not in ("application/zip", "application/x-zip-compressed") and not file.filename.lower().endswith(".zip"):
         return error_response(
             message="Uploaded file does not appear to be a valid ZIP archive",
@@ -99,3 +98,13 @@ async def scan_zip_endpoint(
             message="Scan submitted successfully",
             status_code=status.HTTP_202_ACCEPTED
         )
+
+
+@router.get("/zip")
+@router.get("/zip/")
+def zip_scan_get_not_allowed():
+    """Helpful rejection if a client attempts a GET request on zip upload endpoint."""
+    return error_response(
+        message="The ZIP scan endpoint requires HTTP POST with multipart/form-data. Example: curl -X POST 'http://127.0.0.1:8000/api/scan/zip?sync=true' -F 'file=@archive.zip'",
+        status_code=status.HTTP_405_METHOD_NOT_ALLOWED
+    )

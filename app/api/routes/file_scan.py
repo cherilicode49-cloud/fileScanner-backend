@@ -12,6 +12,7 @@ router = APIRouter(prefix="/scan", tags=["Scanning"])
 
 
 @router.post("/file")
+@router.post("/file/")
 async def scan_file_endpoint(
     file: UploadFile = File(..., description="The file to scan for malware and suspicious patterns"),
     sync: Optional[bool] = Query(None, description="Force synchronous execution (defaults to env setting)"),
@@ -100,3 +101,13 @@ async def scan_file_endpoint(
             message="Scan submitted successfully",
             status_code=status.HTTP_202_ACCEPTED
         )
+
+
+@router.get("/file")
+@router.get("/file/")
+def file_scan_get_not_allowed():
+    """Helpful rejection if a client attempts a GET request on file upload endpoint."""
+    return error_response(
+        message="The file scan endpoint requires HTTP POST with multipart/form-data. Example: curl -X POST 'http://127.0.0.1:8000/api/scan/file?sync=true' -F 'file=@your_file.png'",
+        status_code=status.HTTP_405_METHOD_NOT_ALLOWED
+    )

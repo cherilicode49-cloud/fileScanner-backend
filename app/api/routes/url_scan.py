@@ -12,6 +12,7 @@ router = APIRouter(prefix="/scan", tags=["Scanning"])
 
 
 @router.post("/url")
+@router.post("/url/")
 def scan_url_endpoint(
     payload: URLScanRequest = Body(...),
     sync: Optional[bool] = Query(None, description="Force synchronous execution"),
@@ -23,7 +24,6 @@ def scan_url_endpoint(
     """
     target_url = payload.url.strip()
 
-    # Pre-validation for immediate SSRF error response
     is_safe, error_msg, _ = validate_url_security(target_url)
     if not is_safe:
         return error_response(
@@ -70,3 +70,12 @@ def scan_url_endpoint(
             status_code=status.HTTP_202_ACCEPTED
         )
 
+
+@router.get("/url")
+@router.get("/url/")
+def url_scan_get_not_allowed():
+    """Helpful rejection if a client attempts a GET request on url scan endpoint."""
+    return error_response(
+        message="The URL scan endpoint requires HTTP POST with JSON body. Example: curl -X POST 'http://127.0.0.1:8000/api/scan/url?sync=true' -H 'Content-Type: application/json' -d '{\"url\": \"https://example.com\"}'",
+        status_code=status.HTTP_405_METHOD_NOT_ALLOWED
+    )
