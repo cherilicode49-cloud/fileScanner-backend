@@ -1,0 +1,594 @@
+{
+  "info": {
+    "name": "FileScanner API Collection",
+    "_postman_id": "7b8f9a2e-4c1d-48a3-9b2f-7634f59e9f12",
+    "description": "Comprehensive Postman test collection for FileScanner backend API. Scans files, ZIP archives, and URLs locally with ClamAV and YARA, featuring SSRF protection and PDF report generation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "scan_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Application is healthy\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/health",
+          "host": ["{{base_url}}"],
+          "path": ["api", "health"]
+        },
+        "description": "Checks the operational status of the FileScanner application and database connection."
+      }
+    },
+    {
+      "name": "2. Scanner Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Scanners status returned\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data).to.have.property('clamav');",
+              "    pm.expect(jsonData.data).to.have.property('yara');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/health/scanners",
+          "host": ["{{base_url}}"],
+          "path": ["api", "health", "scanners"]
+        },
+        "description": "Checks the connectivity and status of the ClamAV daemon and compiled YARA rules."
+      }
+    },
+    {
+      "name": "3. Upload a Normal PDF",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "if (jsonData.data && jsonData.data.scan_id) {",
+              "    pm.collectionVariables.set(\"scan_id\", jsonData.data.scan_id);",
+              "    console.log(\"Saved scan_id: \" + jsonData.data.scan_id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "",
+              "description": "Select a sample PDF file to upload and scan"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/scan/file?sync=true",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "file"],
+          "query": [
+            {
+              "key": "sync",
+              "value": "true"
+            }
+          ]
+        },
+        "description": "Uploads and scans a standard PDF file for malicious embedded scripts and signatures."
+      }
+    },
+    {
+      "name": "4. Upload a DOCX",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "if (jsonData.data && jsonData.data.scan_id) {",
+              "    pm.collectionVariables.set(\"scan_id\", jsonData.data.scan_id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "",
+              "description": "Select a DOCX file to scan"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/scan/file?sync=true",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "file"],
+          "query": [
+            {
+              "key": "sync",
+              "value": "true"
+            }
+          ]
+        },
+        "description": "Uploads and scans a DOCX file for malicious macros and payloads."
+      }
+    },
+    {
+      "name": "5. Upload Executable / Test File (EICAR)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "if (jsonData.data && jsonData.data.scan_id) {",
+              "    pm.collectionVariables.set(\"scan_id\", jsonData.data.scan_id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "",
+              "description": "Select an executable or EICAR antivirus test file"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/scan/file?sync=true",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "file"],
+          "query": [
+            {
+              "key": "sync",
+              "value": "true"
+            }
+          ]
+        },
+        "description": "Uploads an executable (.exe) or EICAR test signature file to verify malware detection."
+      }
+    },
+    {
+      "name": "6. Upload a ZIP Archive",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "if (jsonData.data && jsonData.data.scan_id) {",
+              "    pm.collectionVariables.set(\"scan_id\", jsonData.data.scan_id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "",
+              "description": "Select a ZIP archive to safely extract and scan"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/scan/zip?sync=true",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "zip"],
+          "query": [
+            {
+              "key": "sync",
+              "value": "true"
+            }
+          ]
+        },
+        "description": "Safely inspects, extracts, and scans individual files inside a ZIP archive."
+      }
+    },
+    {
+      "name": "7. Scan a URL",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "if (jsonData.data && jsonData.data.scan_id) {",
+              "    pm.collectionVariables.set(\"scan_id\", jsonData.data.scan_id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"url\": \"https://example.com\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/scan/url?sync=true",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "url"],
+          "query": [
+            {
+              "key": "sync",
+              "value": "true"
+            }
+          ]
+        },
+        "description": "Scans a website URL for phishing indicators, suspicious scripts, and metadata."
+      }
+    },
+    {
+      "name": "8. Check Scan Status",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.expect(jsonData.data).to.have.property('scan_status');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/scan/{{scan_id}}/status",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "{{scan_id}}", "status"]
+        },
+        "description": "Retrieves the status (SCANNING, CLEAN, SUSPICIOUS, MALICIOUS, etc.) of a specific scan."
+      }
+    },
+    {
+      "name": "9. Retrieve Scan Results",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.expect(jsonData.data).to.have.property('scanner_results');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/scan/{{scan_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "{{scan_id}}"]
+        },
+        "description": "Retrieves full detailed scan results, including individual scanner outputs and threats."
+      }
+    },
+    {
+      "name": "10. Retrieve Scan History",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.expect(jsonData.data).to.have.property('items');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/scan/history?page=1&limit=10",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "history"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        },
+        "description": "Fetches paginated list of previous scans from PostgreSQL."
+      }
+    },
+    {
+      "name": "11. Download Scan Report (PDF)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/scan/{{scan_id}}/report?format=pdf",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "{{scan_id}}", "report"],
+          "query": [
+            {
+              "key": "format",
+              "value": "pdf"
+            }
+          ]
+        },
+        "description": "Downloads the generated PDF security analysis report."
+      }
+    },
+    {
+      "name": "12. Test Invalid File Upload (Empty)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.expect(jsonData.success).to.eql(false);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "text",
+              "value": "",
+              "description": "Simulates empty upload or missing file binary"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/scan/file",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "file"]
+        },
+        "description": "Verifies that empty files or invalid upload payloads are rejected with 400 Bad Request."
+      }
+    },
+    {
+      "name": "13. Test Oversized Upload",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 413 or 400\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([413, 400]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "",
+              "description": "Select a file larger than MAX_FILE_SIZE_MB (100MB)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/scan/file",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "file"]
+        },
+        "description": "Tests file size limit enforcement (rejects with 413 Request Entity Too Large)."
+      }
+    },
+    {
+      "name": "14. Test Invalid URL",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400 or 422\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"url\": \"ftp://invalid-scheme.example.com\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/scan/url",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "url"]
+        },
+        "description": "Verifies that invalid URL formats and disallowed protocols (ftp, gopher) are rejected."
+      }
+    },
+    {
+      "name": "15. Test Localhost / SSRF URL Blocking",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400 (SSRF Blocked)\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.expect(jsonData.success).to.eql(false);",
+              "pm.expect(jsonData.message).to.include(\"SSRF\");"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"url\": \"http://127.0.0.1:8000/api/health\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/scan/url",
+          "host": ["{{base_url}}"],
+          "path": ["api", "scan", "url"]
+        },
+        "description": "Tests SSRF protection by attempting to scan localhost / loopback address. Must be blocked immediately."
+      }
+    }
+  ]
+}
+
